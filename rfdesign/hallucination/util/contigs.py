@@ -1,11 +1,9 @@
 # utility functions for dealing with contigs during hallucination
 import numpy as np
-import random, copy, torch, os, sys
-import kinematics, geometry
+import random, copy, torch
+from . import geometry
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, script_dir+'/../')
-import models.rf_Nov05_2021.kinematics as kinematics_nov05
+from ..models.rf_Nov05_2021 import kinematics as kinematics_nov05
 
 def parse_range_string(el):
   ''' Splits string with integer or integer range into start and end ints. '''

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions.log_normal import LogNormal
-from geometry import get_ang,get_dih,get_cb
+from .geometry import get_ang, get_dih, get_cb
 
 fold_params = {
     "SG7"     : np.array([[[-2,3,6,7,6,3,-2]]])/21,

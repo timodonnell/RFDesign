@@ -6,8 +6,8 @@ import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.nn import TransformerConv
 
-from constant import *
-from util_module import make_full_graph, get_seqsep
+from .constant import *
+from .util_module import make_full_graph, get_seqsep
 
 class UniMPBlock(nn.Module):
     '''https://arxiv.org/pdf/2009.03509.pdf'''

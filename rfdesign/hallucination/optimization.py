@@ -1,18 +1,13 @@
-import sys, os, pickle, json, importlib, copy, contigs
+import sys, os, pickle, json, importlib, copy
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, script_dir+'/util')
-
-from parsers import parse_pdb, parse_a3m
-from trFold import TRFold
-from util import num2aa, write_pdb, aa_1_N, aa_N_1, alphabet_mapping, alpha_1, alphabet_onehot_2_onehot 
-import parsers, geometry, util
-from models.ensemble import EnsembleNet  
+from .util.parsers import parse_pdb, parse_a3m
+#from .models.rf_Nov05_2021 import TRFold
+from .util.util import write_pdb, aa_1_N, aa_N_1, alphabet_mapping, alpha_1, alphabet_onehot_2_onehot
+from .util import util, trFold
 
 C6D_KEYS = ['dist','omega','theta','phi']
 
@@ -117,7 +112,7 @@ def run_trfold(out, probs, args):
     # TRFold
     with torch.enable_grad():
         probs = [p[0] for p in probs]  # Cut batch dimension
-        TRF = TRFold(probs)
+        TRF = trFold.TRFold(probs)
         if 'xyz' in out.keys(): 
             xyz = TRF.fold(ca_trace=out['xyz'][0,:,1].float(),
                            batch=args.batch,lr=args.lr,nsteps=args.nsteps)
@@ -269,11 +264,16 @@ def load_structure_predictor(include_dir, args, device):
     def import_method(path_str):
         '''import a method from folder/subfolder/file.py given a string
         folder.subfolder.file.method; add folder/subfolder to sys.path'''
-        module,method = path_str.rsplit('.',1)
-        sys.path.insert(0, include_dir+'/'+module.rsplit('.',1)[0].replace('.','/'))
-        module = importlib.import_module(module)
-        method = getattr(module,method)
-        return method
+        module, method = path_str.rsplit('.', 1)
+        filename = os.path.join(include_dir, module.replace(".", "/")) + ".py"
+
+        with open(filename) as f:
+            code = compile(f.read(), filename, 'exec')
+            namespace = {
+                '__name__': "rfdesign.hallucination." + module,
+            }
+            exec(code, namespace)
+            return namespace[method]
 
     print(f'Loading structure prediction model onto device {device}...')
     reg_models = json.load(open(include_dir+"/models/models.json"))

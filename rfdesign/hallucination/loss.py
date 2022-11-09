@@ -1,10 +1,8 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-import sys, os
-script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(script_dir+'/util/')
-import geometry
+
+from .util import geometry
 
 class AffineTransform(object):
     def __init__(self, xyz1, xyz2):

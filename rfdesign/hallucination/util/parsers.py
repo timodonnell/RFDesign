@@ -1,10 +1,6 @@
 import numpy as np
-import scipy
-import scipy.spatial
 import string
-import os,re
-import random
-import util
+from . import util
 
 to1letter = {
     "ALA":'A', "ARG":'R', "ASN":'N', "ASP":'D', "CYS":'C',

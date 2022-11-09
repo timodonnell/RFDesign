@@ -1,31 +1,21 @@
-import sys, os, argparse, copy, subprocess, glob, time, pickle, json, tempfile, random
+import sys, os, argparse, subprocess, time, random
 import numpy as np
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 # suppress some pytorch warnings when using a cpu
 import warnings
-warnings.filterwarnings("ignore", category=UserWarning) 
+warnings.filterwarnings("ignore", category=UserWarning)
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, script_dir+'/util')
+from .util.parsers import parse_pdb
+from .util.geometry import xyz_to_c6d,c6d_to_bins2
 
-from models.ensemble import EnsembleNet
-from parsers import parse_pdb
-from geometry import xyz_to_c6d,c6d_to_bins2
-
-from util import write_pdb, aa_1_N, aa_N_1, alpha_1, combine_pdbs
-import util
-import kinematics
-import contigs
+from .util.util import aa_N_1, combine_pdbs
+from .util import contigs
 from distutils.util import strtobool
 
-from trFold import TRFold
-
-import loss
-import optimization
+from . import loss
+from . import optimization
 
 C6D_KEYS = ['dist','omega','theta','phi']                                                                
 torch.backends.cudnn.deterministic = True
@@ -34,6 +24,8 @@ torch.set_printoptions(sci_mode=False)   # easier for debugging as well
 # only uncomment these 2 lines when debugging! otherwise 2.5x slower
 #torch.autograd.set_detect_anomaly(True)
 #os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 def get_args(argv=None):
 
@@ -258,10 +250,10 @@ def canonicalize_force_aa_string(force_aa, pdb):
 ####################################################
 # MAIN
 ####################################################
-def main():
+def main(argv=None):
 
     # arguments & settings
-    args = get_args()
+    args = get_args(argv=argv)
 
     #####################################################
     # Load neural network models
