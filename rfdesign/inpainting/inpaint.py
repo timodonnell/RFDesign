@@ -13,19 +13,16 @@ from icecream import ic
 import math
 
 # inpainting associated things
-import inf_methods
-from inpaint_util import get_translated_coords, get_tied_translated_coords, translate_coords, parse_block_rotate, rotate_block, write_pdb
-import pred_util
-from contigs import ContigMap, get_mappings
-import parsers
+from . import inf_methods
+from .inpaint_util import get_translated_coords, get_tied_translated_coords, translate_coords, parse_block_rotate, rotate_block, write_pdb, seq2chars
+from .contigs import ContigMap, get_mappings
+from . import parsers
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(script_dir+'/model')
-from RoseTTAFoldModel import RoseTTAFoldModule
-from mask_generator import generate_masks 
-from data_loader import MSAFeaturize_fixbb, TemplFeaturizeFixbb 
-from kinematics import xyz_to_t2d
-import util
+
+from .model.RoseTTAFoldModel import RoseTTAFoldModule
+from .model.data_loader import MSAFeaturize_fixbb, TemplFeaturizeFixbb
+from .model.kinematics import xyz_to_t2d
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -80,7 +77,7 @@ def process_args(args):
     return args 
     
 
-def get_args():
+def get_args(argv=None):
     """
     Parse command line args
     """
@@ -144,7 +141,7 @@ def get_args():
              'design.')
 
      
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     args = process_args(args)
      
     return args
@@ -201,24 +198,31 @@ def MSAFeaturize_fixbb_inference(seq, params):
 
     return b_seq, b_msa_clust, b_msa_seed, b_msa_extra, b_mask_pos
 
+def initialize(checkpoint=script_dir + '/weights/BFF_mix_epoch25.pt'):
+    # make model and load checkpoint
+    print('Loading model checkpoint...')
+    model = RoseTTAFoldModule(**MODEL_PARAM).to(DEVICE)
+    ckpt = torch.load(checkpoint, map_location=DEVICE)
+    model_state = ckpt['model_state_dict']
+    model.load_state_dict(model_state)
+    print('Successfully loaded model checkpoint')
+    return {
+        'model': model,
+    }
  
-def main():
+def main(argv=None, initialization_result=None):
 
-    args = get_args()
+    args = get_args(argv=argv)
 
     design_params = {'MAXLAT'           : 1,            # dummy val
                      'FIX_BB_MUT_FRAC'  : 0.0}
     
     inf_method = inf_methods.classic_inference
 
-    # make model and load checkpoint 
-    print('Loading model checkpoint...')
-    model = RoseTTAFoldModule(**MODEL_PARAM).to(DEVICE)
-    ckpt = torch.load(args.checkpoint, map_location=DEVICE)
-    model_state = ckpt['model_state_dict']
-    model.load_state_dict(model_state)
-    print('Successfully loaded model checkpoint')
-    
+    if initialization_result is None:
+        initialization_result = initialize(checkpoint=args.checkpoint)
+    model = initialization_result['model']
+
     # loop through dicts of arguments from json input
     if args.input_json is not None:
         with open(args.input_json) as f_json:
@@ -343,7 +347,7 @@ def main():
            
             
             if args.verbose:
-                ic(aa_util.seq2chars(seq))
+                ic(seq2chars(seq))
 
             ### put on device / cast ###
             seq     = seq.to(DEVICE).long()[None,None].repeat(1,args.n_cycle,1)
@@ -427,9 +431,6 @@ def main():
                 with open(f'{args.out}_{i_des}_translated_coords.json', "w") as outfile:
                     json.dump(translate_dict, outfile)
             '''
-    sys.exit('Successfully wrote output')
-        
-
     
 if __name__ == '__main__':
     main()

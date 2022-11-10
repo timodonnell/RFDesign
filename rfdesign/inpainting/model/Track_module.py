@@ -4,11 +4,11 @@ import torch.nn.functional as F
 import math
 from opt_einsum import contract as einsum
 import torch.utils.checkpoint as checkpoint
-from util_module import *
-from Attention_module import *
-from InitStrGenerator import InitStr_Network
-from SE3_network import SE3TransformerWrapper
-from resnet import ResidualNetwork
+from .util_module import *
+from .Attention_module import *
+from .InitStrGenerator import InitStr_Network
+from .SE3_network import SE3TransformerWrapper
+from .resnet import ResidualNetwork
 
 # Perceiver architecture to update seed MSA w/ extra MSA
 class Perceiver(nn.Module):

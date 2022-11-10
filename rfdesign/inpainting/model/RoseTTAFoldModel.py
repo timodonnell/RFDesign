@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from Embeddings import MSA_emb, Extra_emb, Templ_emb, Recycling
-from Track_module import IterativeFeatureExtractor
-from AuxiliaryPredictor import DistanceNetwork, MaskedTokenNetwork 
-from constant import INIT_CRDS
+from .Embeddings import MSA_emb, Extra_emb, Templ_emb, Recycling
+from .Track_module import IterativeFeatureExtractor
+from .AuxiliaryPredictor import DistanceNetwork, MaskedTokenNetwork
+from .constant import INIT_CRDS
 
 from icecream import ic 
 torch.set_printoptions(sci_mode=False)

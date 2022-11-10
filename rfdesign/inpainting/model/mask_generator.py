@@ -3,7 +3,7 @@ import sys
 import random
 from icecream import ic 
 import numpy as np
-from kinematics import xyz_to_t2d
+from .kinematics import xyz_to_t2d
 from operator import itemgetter
 #####################################
 # Misc functions for mask generation

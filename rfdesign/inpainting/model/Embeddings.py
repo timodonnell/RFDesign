@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from opt_einsum import contract as einsum
 import torch.utils.checkpoint as checkpoint
-from util_module import Dropout, get_clones, create_custom_forward, rbf, init_lecun_normal
-from Attention_module import Attention, TriangleMultiplication, TriangleAttention, FeedForwardLayer
+from .util_module import Dropout, get_clones, create_custom_forward, rbf, init_lecun_normal
+from .Attention_module import Attention, TriangleMultiplication, TriangleAttention, FeedForwardLayer
 from datetime import datetime 
 import pickle 
 

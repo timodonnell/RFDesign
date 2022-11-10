@@ -4,7 +4,7 @@ import scipy.spatial
 import string
 import os,re
 import random
-import inpaint_util as util
+from . import inpaint_util as util
 
 to1letter = {
     "ALA":'A', "ARG":'R', "ASN":'N', "ASP":'D', "CYS":'C',

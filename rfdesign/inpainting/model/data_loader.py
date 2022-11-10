@@ -7,12 +7,12 @@ import os
 import csv
 from dateutil import parser
 import numpy as np
-from parsers import parse_a3m, parse_pdb
+from ..parsers import parse_a3m, parse_pdb
 from itertools import islice
 
 from icecream import ic 
-from mask_generator import generate_masks
-import util
+from .mask_generator import generate_masks
+from . import util
 
 
 import math 

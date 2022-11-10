@@ -6,7 +6,7 @@ import torch
 from torch.utils import data
 import numpy as np
 from dateutil import parser
-from inpaint_util import *
+from .inpaint_util import *
 import pandas as pd
 import sys
 
