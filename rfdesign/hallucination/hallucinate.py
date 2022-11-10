@@ -11,7 +11,7 @@ from .util.parsers import parse_pdb
 from .util.geometry import xyz_to_c6d,c6d_to_bins2
 
 from .util.util import aa_N_1, combine_pdbs
-from .util import contigs
+from .util import contigs, util
 from distutils.util import strtobool
 
 from . import loss
@@ -204,16 +204,6 @@ def get_args(argv=None):
     if args.contigs is not None and args.len is None:
         sys.exit('ERROR: When using --contigs, --len must also be given.')
 
-    # add git hash of current commit
-    try:
-        args.commit = subprocess.check_output(f'git --git-dir {script_dir}/../.git rev-parse HEAD',
-                                              shell=True).decode().strip()
-    except subprocess.CalledProcessError:
-        print('WARNING: Failed to determine git commit hash.')
-        args.commit = 'unknown'
-
-    print(f'\nRun settings:\n{args.__dict__}\n')
-
     return args
 
 def set_global_seed(seed):
@@ -250,34 +240,63 @@ def canonicalize_force_aa_string(force_aa, pdb):
 ####################################################
 # MAIN
 ####################################################
-def main(argv=None):
 
-    # arguments & settings
-    args = get_args(argv=argv)
+def initialize(
+        device='cuda:0',
+        n_threads=4,
+        network_name='rf_Nov05_2021',
+        weights_dir=script_dir + '/weights/'):
 
     #####################################################
     # Load neural network models
     #####################################################
-    device = args.device #'cuda:0'
-    torch.set_num_threads(args.nthreads)
+    torch.set_num_threads(n_threads)
 
     # Structure prediction model: p(structure | sequence)
+    args = argparse.Namespace()
+    args.network_name = network_name
+    args.weights_dir = weights_dir
     Net, net_params = optimization.load_structure_predictor(script_dir, args, device)
-    print(f'Loaded sequence-to-structure model {args.network_name} with {sum([p.numel() for p in Net.parameters()])} parameters')
+    print(
+        f'Loaded sequence-to-structure model {network_name} with {sum([p.numel() for p in Net.parameters()])} parameters')
     print(f'\nModel hyperparameters:\n{net_params}')
 
     # output device, for split-gpu models
     out_device = device
-    if hasattr(Net,'c6d_predictor'):
+    if hasattr(Net, 'c6d_predictor'):
         out_device = next(Net.c6d_predictor.parameters()).device
 
     # print device names
     devices = list(set([str(device), str(out_device)]))
-    print(f'\nUsing CUDA device(s): ',end='')
+    print(f'\nUsing CUDA device(s): ', end='')
     for i in devices:
-        print(f' {i}: ({torch.cuda.get_device_name(i)}); ',end='')
+        print(f' {i}: ({torch.cuda.get_device_name(i)}); ', end='')
     print()
-  
+
+    return {
+        'Net': Net,
+        'net_params': net_params,
+        'out_device': out_device,
+    }
+
+CACHE = {}
+def main(argv=None, initialization_result=None):
+    # arguments & settings
+    args = get_args(argv=argv)
+
+    device = args.device
+
+    if initialization_result is None:
+        initialization_result = initialize(
+            device=device,
+            n_threads=args.nthreads,
+            network_name=args.network_name,
+            weights_dir=args.weights_dir)
+
+    Net = initialization_result['Net']
+    net_params = initialization_result['net_params']
+    out_device = initialization_result['out_device']
+
     #####################################################
     # parse input pdb
     #####################################################
@@ -607,8 +626,14 @@ def main(argv=None):
         if args.w_kl >= 0:
             # get bkg distributions
             if args.calc_bkg:
-                print(f'Calculating {args.n_bkg} background distributions...')
-                bkg = loss.mk_bkg(Net, args.msa_num, L, n_runs=args.n_bkg, net_kwargs=net_kwargs)
+                cache_key = ('background', L, args.msa_num, args.n_bkg)
+                bkg = CACHE.get(cache_key)
+                if bkg is None:
+                    print(f'Calculating {args.n_bkg} background distributions...')
+                    bkg = loss.mk_bkg(Net, args.msa_num, L, n_runs=args.n_bkg, net_kwargs=net_kwargs)
+                    CACHE[cache_key] = bkg
+                else:
+                    print("Using cached background distributions")
             else:
                 bkg = np.load(f'/projects/ml/trDesign/backgrounds/generic/{int(L)}.npz')
                 bkg = {k: torch.tensor(v).to(out_device) for k, v in bkg.items()}
@@ -725,7 +750,6 @@ def main(argv=None):
             
         print(f'Finished design {in_prefix} in {(time.time() - t0)/60:.2f} minutes.')
 
-        if 'msa' in locals(): del msa
 
 if __name__ == "__main__":
     main()
