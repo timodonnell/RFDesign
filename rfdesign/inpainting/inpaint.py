@@ -24,8 +24,6 @@ from .model.RoseTTAFoldModel import RoseTTAFoldModule
 from .model.data_loader import MSAFeaturize_fixbb, TemplFeaturizeFixbb
 from .model.kinematics import xyz_to_t2d
 
-DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
 MODEL_PARAM = {'SE3_param': {'div': 4,
                                 'l0_in_features': 32,
                                 'l0_out_features': 32,
@@ -198,20 +196,24 @@ def MSAFeaturize_fixbb_inference(seq, params):
 
     return b_seq, b_msa_clust, b_msa_seed, b_msa_extra, b_mask_pos
 
-def initialize(checkpoint=script_dir + '/weights/BFF_mix_epoch25.pt'):
+
+def initialize(checkpoint=script_dir + '/weights/BFF_mix_epoch25.pt', device=None):
+    if device is None:
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
     # make model and load checkpoint
     print('Loading model checkpoint...')
-    model = RoseTTAFoldModule(**MODEL_PARAM).to(DEVICE)
-    ckpt = torch.load(checkpoint, map_location=DEVICE)
+    model = RoseTTAFoldModule(**MODEL_PARAM).to(device)
+    ckpt = torch.load(checkpoint, map_location=device)
     model_state = ckpt['model_state_dict']
     model.load_state_dict(model_state)
     print('Successfully loaded model checkpoint')
     return {
         'model': model,
+        'device': device,
     }
  
 def main(argv=None, initialization_result=None):
-
     args = get_args(argv=argv)
 
     design_params = {'MAXLAT'           : 1,            # dummy val
@@ -222,6 +224,7 @@ def main(argv=None, initialization_result=None):
     if initialization_result is None:
         initialization_result = initialize(checkpoint=args.checkpoint)
     model = initialization_result['model']
+    DEVICE = initialization_result['device']
 
     # loop through dicts of arguments from json input
     if args.input_json is not None:
