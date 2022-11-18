@@ -280,7 +280,7 @@ def initialize(
     }
 
 CACHE = {}
-def main(argv=None, initialization_result=None):
+def main(argv=None, initialization_result=None, add_extra_losses_function=None):
     # arguments & settings
     args = get_args(argv=argv)
 
@@ -665,6 +665,9 @@ def main(argv=None, initialization_result=None):
         ml.add('sym',        rotation_loss,   weight=args.w_sym)
         ml.add('set_rep',    set_rep_loss,    weight=args.w_set_rep)
         ml.add('set_atr',    set_atr_loss,    weight=args.w_set_atr)
+
+        if add_extra_losses_function is not None:
+            add_extra_losses_function(ml, mappings, xyz_ref)
 
         print(ml)
     
